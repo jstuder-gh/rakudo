@@ -116,7 +116,8 @@ my class IO::Handle {
         );
 
         nqp::if(
-          nqp::iseq_s($!path.Str, '-'),
+          nqp::iseq_s($!path.Str, '-')
+          && nqp::iseq_s('6.c', nqp::getcomp('perl6').language_version),
           nqp::if(
             nqp::iseq_s($mode, 'ro'),
             nqp::if(
