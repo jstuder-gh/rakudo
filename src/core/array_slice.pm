@@ -54,6 +54,10 @@ multi sub POSITIONS(
         }
     }
 
+    my \collection-elems = nqp::istrue(pos.is-lazy) && nqp::isfalse(SELF.is-lazy)
+                            ?? SELF.elems - 1
+                            !! -1;
+
     # we can optimize `42..*` Ranges; as long as they're from core, unmodified
     my \pos-iter = nqp::eqaddr(pos.WHAT,Range)
         && nqp::eqaddr(pos.max,Inf)
@@ -73,7 +77,7 @@ multi sub POSITIONS(
         # one that fails to exists.
         my \rest-seq = Seq.new(pos-iter).flatmap: -> Int() $i {
             nqp::unless(
-              $eagerize($i),
+              $eagerize($i) || nqp::islt_i($i, collection-elems),
               last,
               $i
             )
