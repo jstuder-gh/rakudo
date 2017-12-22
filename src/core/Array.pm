@@ -624,7 +624,7 @@ my class Array { # declared in BOOTSTRAP
                     nqp::atpos($reified,$pos),
                     self.default
                   )),
-                  nqp::bindpos($reified,$pos,nqp::null),   # remove this one
+                  nqp::bindpos($reified,$pos,nqp::inactive),   # remove this one
                   nqp::if(
                     nqp::iseq_i($pos,$end) && nqp::not_i(nqp::defined($todo)),
                     nqp::stmts(                            # shorten from end

@@ -66,6 +66,8 @@ my role Sequence does PositionalBindFailover {
         self.cache.EXISTS-POS($idx)
     }
 
+	method ACTIVE-POS(::?CLASS:D: Int $idx) { self.cache.ACTIVE-POS($idx) }
+
     multi method eager(::?CLASS:D:) { List.from-iterator(self.iterator).eager }
 
     method fmt(|c) {

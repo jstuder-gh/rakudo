@@ -617,6 +617,20 @@ my class List does Iterable does Positional { # declared in BOOTSTRAP
         )
     }
 
+    method ACTIVE-POS(List:D: Int:D $pos) {
+        nqp::if(
+            (my $exists := self.EXISTS-POS($pos)),
+            $exists,
+            nqp::if(
+                ( my $exists-inactive := nqp::isinactive(
+                    nqp::atpos( nqp::getattr(self, List, '$!reified'), $pos )
+                )),
+                $exists-inactive,
+                0
+            )
+        )
+    }
+
     method reification-target(List:D:) {
         nqp::ifnull(
           $!reified,
