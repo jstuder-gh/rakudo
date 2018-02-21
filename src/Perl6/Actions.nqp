@@ -10006,8 +10006,7 @@ class Perl6::QActions is HLL::Actions does STDActions {
 
     method postprocess_words($/, $past) {
         if $past.has_compile_time_value {
-            my @words := HLL::Grammar::split_words($/,
-                nqp::unbox_s($past.compile_time_value));
+            my @words := words( nqp::unbox_s($past.compile_time_value) );
             if +@words != 1 {
                 $past := QAST::Op.new( :op('call'), :name('&infix:<,>'), :node($/) );
                 for @words { $past.push($*W.add_string_constant(~$_)); }
@@ -10035,8 +10034,7 @@ class Perl6::QActions is HLL::Actions does STDActions {
             }
             # (can't just use postprocess_words here because it introduces spurious comma operations)
             elsif $node.has_compile_time_value {
-                my @words := HLL::Grammar::split_words($/,
-                    nqp::unbox_s($node.compile_time_value));
+                my @words := words( nqp::unbox_s($node.compile_time_value) );
                 for @words { $result.push($*W.add_string_constant(~$_)); }
             }
             else {
