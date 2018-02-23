@@ -2139,6 +2139,9 @@ my class Str does Stringy { # declared in BOOTSTRAP
           !! self.words.head($limit)
     }
     multi method words(Str:D:) {
+        my int $nbsp = nqp::const::CCLASS_NBSP;
+        my int $ws   = nqp::const::CCLASS_WHITESPACE;
+
         Seq.new(class :: does Iterator {
             has str $!str;
             has int $!chars;
@@ -2147,23 +2150,25 @@ my class Str does Stringy { # declared in BOOTSTRAP
             method !SET-SELF(\string) {
                 $!str   = nqp::unbox_s(string);
                 $!chars = nqp::chars($!str);
-                $!pos   = nqp::findnotcclass(
-                  nqp::const::CCLASS_WHITESPACE, $!str, 0, $!chars);
+                $!pos   = nqp::findnotcclass($ws, $!str, 0, $!chars);
                 self
             }
             method new(\string) { nqp::create(self)!SET-SELF(string) }
             method pull-one() {
                 my int $left;
-                my int $nextpos;
+                my int $nextpos = $!pos;
 
                 if ($left = $!chars - $!pos) > 0 {
-                    $nextpos = nqp::findcclass(
-                      nqp::const::CCLASS_WHITESPACE, $!str, $!pos, $left);
+                    while nqp::iscclass(
+                        $nbsp, $!str,
+                        $nextpos = nqp::findcclass($ws, $!str, $nextpos, $left) )
+                    {
+                        $nextpos += 1
+                    }
 
                     my str $found =
                       nqp::substr($!str, $!pos, $nextpos - $!pos);
-                    $!pos = nqp::findnotcclass( nqp::const::CCLASS_WHITESPACE,
-                      $!str, $nextpos, $!chars - $nextpos);
+                    $!pos = nqp::findnotcclass($ws, $!str, $nextpos, $!chars - $nextpos);
 
                     return nqp::p6box_s($found);
                 }
@@ -2174,14 +2179,18 @@ my class Str does Stringy { # declared in BOOTSTRAP
                 my int $nextpos;
 
                 while ($left = $!chars - $!pos) > 0 {
-                    $nextpos = nqp::findcclass(
-                      nqp::const::CCLASS_WHITESPACE, $!str, $!pos, $left);
+                    $nextpos = $!pos;
+                    while nqp::iscclass(
+                        $nbsp, $!str,
+                        $nextpos = nqp::findcclass($ws, $!str, $nextpos, $left) )
+                    {
+                        $nextpos += 1
+                    }
 
                     $target.push(nqp::p6box_s(
                       nqp::substr($!str, $!pos, $nextpos - $!pos)
                     ));
-                    $!pos = nqp::findnotcclass( nqp::const::CCLASS_WHITESPACE,
-                      $!str, $nextpos, $!chars - $nextpos);
+                    $!pos = nqp::findnotcclass($ws, $!str, $nextpos, $!chars - $nextpos);
                 }
             }
         }.new(self));
