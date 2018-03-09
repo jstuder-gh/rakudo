@@ -1839,12 +1839,12 @@ Did you mean to add a stub (\{...\}) or did you mean to .classify?"
            Rakudo::Iterator.AllButLastNValues(self.iterator,-($w(0).Int))
         )
     }
-    multi method head(Any:D: $n) {
+    multi method head(Any:D: Int:D() $n) {
         Seq.new(Rakudo::Iterator.NextNValues(self.iterator,$n))
     }
 
     proto method tail(|) {*}
-    multi method tail() is raw {
+    multi method tail(Any:D:) is raw {
         nqp::if(
           nqp::eqaddr((my $pulled :=
             Rakudo::Iterator.LastValue(self.iterator,'tail')),
@@ -1854,22 +1854,23 @@ Did you mean to add a stub (\{...\}) or did you mean to .classify?"
           $pulled
         )
     }
-    multi method tail($n) {
+    multi method tail(Any:D: Callable:D $w) {
         Seq.new(
-          nqp::if(
-            nqp::istype($n,Callable),
-            nqp::stmts(
-              (my $iterator := self.iterator),
+          nqp::stmts(
+            (my $iterator := self.iterator),
+            nqp::if(
+              nqp::isgt_i((my $skip := -($w(0).Int)),0),
               nqp::if(
-                nqp::isgt_i((my $skip := -($n(0).Int)),0),
-                nqp::if(
-                  $iterator.skip-at-least($skip),
-                  $iterator,
-                  Rakudo::Iterator.Empty),
-                $iterator)),
-            Rakudo::Iterator.LastNValues(self.iterator,$n,'tail')
+                $iterator.skip-at-least($skip),
+                $iterator,
+                Rakudo::Iterator.Empty),
+              $iterator
+            )
           )
         )
+    }
+    multi method tail(Any:D: Int:D() $n) {
+        Seq.new( Rakudo::Iterator.LastNValues(self.iterator, $n, 'tail') )
     }
 
     proto method skip(|) {*}
