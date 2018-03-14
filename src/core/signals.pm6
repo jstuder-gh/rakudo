@@ -7,15 +7,20 @@ multi sub signal(Signal $signal, *@signals, :$scheduler = $*SCHEDULER) {
     }
     @signals.unshift: $signal;
 
-    my @valid;
-    my @invalid;
+    my &do-warning = -> $desc, $name, @sigs {
+        warn "The following signals are not supported on this $desc ({$name}): "
+             ~ "{@sigs.join(', ')}"
+    };
+    my %vm-sigs = nqp::getvmsignals();
+    my ( @valid, @invalid, @vm-unsupported );
     for @signals.unique {
-        $_ ?? @valid.push($_) !! @invalid.push($_)
+        $_  ?? %vm-sigs{$_}
+                ?? @valid.push($_)
+                !! @vm-unsupported.push($_)
+            !! @invalid.push($_)
     }
-    if @invalid {
-        warn "The following signals are not supported on this system ({$*KERNEL.name}): "
-             ~ "{@invalid.join(', ')}"
-    }
+    if @invalid        -> @s { do-warning 'system',  $*KERNEL.name, @s }
+    if @vm-unsupported -> @s { do-warning 'backend', $*VM\   .name, @s }
 
     my class SignalCancellation is repr('AsyncTask') { }
     Supply.merge( @valid.map(-> $signal {
