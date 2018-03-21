@@ -1809,35 +1809,35 @@ Did you mean to add a stub (\{...\}) or did you mean to .classify?"
     }
 
     proto method toggle(|) {*}
-    multi method toggle(Any:D: Callable:D \condition, :$off!) {
+    multi method toggle(Callable:D \condition, :$off!) {
         Seq.new( $off
           ?? Rakudo::Iterator.Until(self.iterator, condition)
           !! Rakudo::Iterator.While(self.iterator, condition)
         )
     }
-    multi method toggle(Any:D: Callable:D \condition) {
+    multi method toggle(Callable:D \condition) {
         Seq.new(Rakudo::Iterator.While(self.iterator, condition))
     }
-    multi method toggle(Any:D: *@conditions, :$off) {
+    multi method toggle(*@conditions, :$off) {
         Seq.new(
           Rakudo::Iterator.Toggle(self.iterator, @conditions.iterator, !$off)
         )
     }
 
     proto method head(|) {*}
-    multi method head(Any:D:) is raw {
+    multi method head() is raw {
         nqp::if(
           nqp::eqaddr((my $pulled := self.iterator.pull-one),IterationEnd),
           Nil,
           $pulled
         )
     }
-    multi method head(Any:D: Callable:D $w) {
+    multi method head(Callable:D $w) {
         Seq.new(
            Rakudo::Iterator.AllButLastNValues(self.iterator,-($w(0).Int))
         )
     }
-    multi method head(Any:D: $n) {
+    multi method head($n) {
         Seq.new(Rakudo::Iterator.NextNValues(self.iterator,$n))
     }
 
@@ -1889,7 +1889,7 @@ Did you mean to add a stub (\{...\}) or did you mean to .classify?"
     }
 
     proto method minpairs(|) {*}
-    multi method minpairs(Any:D:) {
+    multi method minpairs() {
         my @found;
         for self.pairs {
             my $value := .value;
@@ -1907,7 +1907,7 @@ Did you mean to add a stub (\{...\}) or did you mean to .classify?"
     }
 
     proto method maxpairs(|) {*}
-    multi method maxpairs(Any:D:) {
+    multi method maxpairs() {
         my @found;
         for self.pairs {
             my $value := .value;
@@ -1925,18 +1925,18 @@ Did you mean to add a stub (\{...\}) or did you mean to .classify?"
     }
 
     proto method batch(|) is nodal {*}
-    multi method batch(Any:D: Int:D :$elems!) {
+    multi method batch(Int:D :$elems!) {
         Seq.new(Rakudo::Iterator.Batch(self.iterator,$elems,1))
     }
-    multi method batch(Any:D: Int:D $batch) {
+    multi method batch(Int:D $batch) {
         Seq.new(Rakudo::Iterator.Batch(self.iterator,$batch,1))
     }
 
     proto method rotor(|) is nodal {*}
-    multi method rotor(Any:D: Int:D $batch, :$partial) {
+    multi method rotor(Int:D $batch, :$partial) {
         Seq.new(Rakudo::Iterator.Batch(self.iterator,$batch,$partial))
     }
-    multi method rotor(Any:D: *@cycle, :$partial) {
+    multi method rotor(*@cycle, :$partial) {
         Seq.new(Rakudo::Iterator.Rotor(self.iterator,@cycle,$partial))
     }
 }
