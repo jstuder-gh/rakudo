@@ -1573,12 +1573,16 @@ grammar Perl6::Grammar is HLL::Grammar does STD {
         <sym><.end_keyword> <.obs("'foreach'", "'for'")>
     }
 
+    token loop_e1or2or3 {
+        <e1=.EXPR>? ';' <e2=.EXPR>? ';' <e3=.EXPR>?
+    }
+
     token statement_control:sym<loop> {
         <sym><.kok>
         :s''
         [ '('
             [
-            <e1=.EXPR>? ';' <e2=.EXPR>? ';' <e3=.EXPR>?
+            <loop_e1or2or3>
             || <.malformed('loop spec')>
             ]
         ')' ]?

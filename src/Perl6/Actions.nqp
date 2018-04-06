@@ -2356,7 +2356,7 @@ class Perl6::Actions is HLL::Actions does STDActions {
         }
 
         # generate code that runs the block only once
-        make QAST::Op.new(
+        my $stmts := QAST::Op.new(
           :op('decont'),
           QAST::Op.new(
             :op('if'),
@@ -2369,6 +2369,13 @@ class Perl6::Actions is HLL::Actions does STDActions {
             WANTED(QAST::Var.new( :name($sym), :scope('lexical') ),'once')
           )
         );
+
+        # If in loop expr, make closure clone target
+        if $<statement_prefix><loop_e1or2or3> {
+            my $block := make_thunk_ref($stmts, $/);
+            $stmts    := block_closure($block);
+        }
+        make $stmts;
     }
 
     method statement_prefix:sym<start>($/) {
