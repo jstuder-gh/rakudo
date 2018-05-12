@@ -601,15 +601,35 @@ public final class RakOps {
         return indices;
     }
 
-    public static long p6stateinit(SixModelObject obj, ThreadContext tc) {
+    private static long processStateInit(String sym, CodeRef cr) {
         // Find num of lexical, so that we can mark it as HLL inited
+        int     idx       = cr.staticInfo.oTryGetLexicalIdx(sym);
+        boolean doHllInit = !cr.oLexStateIsHllInit[idx];
+
+        cr.oLexStateIsHllInit[idx] = true;
+        return (long)(doHllInit ? 1 : 0);
+    }
+    public static long p6stateinit(String sym, ThreadContext tc) {
         CodeRef cr = tc.curFrame.codeRef;
-        for (int i = 0; i < cr.staticInfo.oLexicalNames.length; i++) {
-            if (obj == tc.curFrame.oLex[i]) {
-                boolean doHllInit        = !cr.oLexStateIsHllInit[i];
-                cr.oLexStateIsHllInit[i] = true;
-                return (long)(doHllInit ? 1 : 0);
+        if (cr.oLexState != null) {
+            return processStateInit(sym, cr);
+        }
+        return 0;
+    }
+    public static long p6stateinitbulk(SixModelObject arr, ThreadContext tc) {
+        CodeRef cr = tc.curFrame.codeRef;
+        if (cr.oLexState != null) {
+            long elems = arr.elems(tc);
+            long res   = 1;
+            for (long i = 0; i < elems; i++) {
+                arr.at_pos_native(tc, i);
+                String sym = tc.native_s;
+
+                long initVal = processStateInit(sym, cr);
+                res &= initVal;
+                if ( res == 0 ) break;
             }
+            return res;
         }
         return 0;
     }
