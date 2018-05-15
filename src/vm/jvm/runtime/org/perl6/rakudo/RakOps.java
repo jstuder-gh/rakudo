@@ -2,6 +2,7 @@ package org.perl6.rakudo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Calendar;
 import java.util.Comparator;
 import org.perl6.nqp.runtime.*;
@@ -604,9 +605,9 @@ public final class RakOps {
     private static long processStateInit(String sym, CodeRef cr) {
         // Find num of lexical, so that we can mark it as HLL inited
         int     idx       = cr.staticInfo.oTryGetLexicalIdx(sym);
-        boolean doHllInit = !cr.oLexStateIsHllInit[idx];
+        boolean doHllInit = !cr.oLexStateIsHllInit.get(idx);
 
-        cr.oLexStateIsHllInit[idx] = true;
+        cr.oLexStateIsHllInit.set(idx, true);
         return (long)(doHllInit ? 1 : 0);
     }
     public static long p6stateinit(String sym, ThreadContext tc) {
