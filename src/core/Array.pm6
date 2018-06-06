@@ -71,16 +71,15 @@ my class Array { # declared in BOOTSTRAP
         nqp::stmts(
           (my \iter := self.iterator),
           (my \result := nqp::p6bindattrinvres(nqp::create(self),
-              Array, '$!descriptor', nqp::isnull($!descriptor) ?? (nqp::null) !! nqp::clone($!descriptor))),
-          nqp::if(
-            nqp::eqaddr(
-              IterationEnd,
-              iter.push-until-lazy:
-                my \target := ArrayReificationTarget.new(
-                  (my \buffer := nqp::create(IterationBuffer)),
-                  nqp::isnull($!descriptor) ?? (nqp::null) !! nqp::clone($!descriptor))),
+              Array, '$!descriptor',
+              nqp::isnull($!descriptor) ?? (nqp::null) !! nqp::clone($!descriptor))),
+          (my \buffer := nqp::clone(nqp::getattr(self, List, '$!reified'))),
+          nqp::unless(
+            nqp::isconcrete(nqp::getattr(self, List, '$!todo')),
             nqp::p6bindattrinvres(result, List, '$!reified', buffer),
             nqp::stmts(
+              (my \target := ArrayReificationTarget.new(
+                  buffer, nqp::isnull($!descriptor) ?? (nqp::null) !! nqp::clone($!descriptor))),
               nqp::bindattr(result, List, '$!reified', buffer),
               nqp::bindattr((my \todo := nqp::create(List::Reifier)),
                 List::Reifier,'$!current-iter', iter),
