@@ -38,7 +38,9 @@ my role Enumeration {
         my $x := nqp::atpos(nqp::p6argvmarray(), 1).AT-POS(0);
         nqp::istype($x, ::?CLASS)
             ?? $x
-            !! self.^enum_from_value($x)
+            !! nqp::islist( my $res = self.^enum_from_value($x) )
+                ?? (|$res).List
+                !! $res
     }
 
     method pred(::?CLASS:D:) {

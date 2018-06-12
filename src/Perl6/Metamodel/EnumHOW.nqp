@@ -85,7 +85,11 @@ class Perl6::Metamodel::EnumHOW
     method enum_from_value($obj, $value) {
         unless %!value_to_enum {
             for @!enum_value_list {
-                %!value_to_enum{$_.value} := $_;
+                %!value_to_enum{$_.value} := nqp::isconcrete( my $v := %!value_to_enum{$_.value} )
+                    ?? nqp::islist($v)
+                        ?? nqp::stmts( nqp::push($v, $_), $v )
+                        !! nqp::list($v, $_)
+                    !! $_;
             }
         }
         nqp::existskey(%!value_to_enum, $value)
