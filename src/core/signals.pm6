@@ -14,6 +14,16 @@ my enum Signal (
     )
 );
 
+{
+    use MONKEY-TYPING;
+    augment class Signal {
+        multi method CALL-ME(Int $v) {
+            return self if $v == 0;
+            nextsame
+        }
+    }
+}
+
 proto sub signal($, |) {*}
 multi sub signal(Signal $signal, *@signals, :$scheduler = $*SCHEDULER) {
     if @signals.grep( { !nqp::istype($_,Signal) } ).list -> @invalid {
