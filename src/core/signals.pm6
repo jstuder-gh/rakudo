@@ -3,6 +3,39 @@ my role Signally {
         return self unless $signum;
         nextsame
     }
+
+    proto method emit(|) {*}
+    multi method emit(::?CLASS:D: Int() $pid) {
+        my @res = ::?CLASS.emit($pid, self);
+        (@res.shift if ?@res) // Nil;
+    }
+    multi method emit(::?CLASS:U: Int() $pid, ::?CLASS:D $signal, *@signals) {
+        if @signals.grep( { !nqp::istype($_, ::?CLASS) } ).list -> @invalid {
+            die "Found invalid signals: {@invalid.join(', ')}"
+        }
+        @signals.unshift: $signal;
+
+        my %prev = %();
+        my @host-unsupported = ();
+        my @res = @signals.map({
+               %prev{$_}:exists ?? %prev{$_}
+            !! $_               ?? ( %prev{$_} = nqp::emitsignal($pid, +$_) )
+            !!                     nqp::stmts(@host-unsupported.push($_), Nil);
+        });
+        if @host-unsupported.unique -> @sigs {
+            warn "The following signals are not supported on this system ({$*KERNEL.name}): "
+                 ~ "{@sigs.join(', ')}\n"
+                 ~ "The signals specified above have not been emitted.";
+        }
+        @res;
+    }
+
+    proto method handler(|) {*}
+    multi method handler(::?CLASS:D: :$scheduler) { ::?CLASS.handler(self, :$scheduler) }
+    multi method handler(::?CLASS:U: ::?CLASS:D $signal, *@signals, :$scheduler) {
+        my $capt = $scheduler ?? \(:$scheduler) !! \();
+        signal($signal, (@signals if ?@signals), |$capt );
+    }
 }
 my enum Signal does Signally (
     |nqp::stmts(
@@ -30,7 +63,8 @@ multi sub signal(Signal $signal, *@signals, :$scheduler = $*SCHEDULER) {
     # 0: Signal not supported by host, Negative: Signal not supported by backend
     my &do-warning = -> $desc, $name, @sigs {
         warn "The following signals are not supported on this $desc ({$name}): "
-             ~ "{@sigs.join(', ')}"
+             ~ "{@sigs.join(', ')}\n"
+             ~ "No handlers created for the signals specified above.";
     };
     my %vm-sigs = nqp::getsignals();
     my ( @valid, @host-unsupported, @vm-unsupported );
