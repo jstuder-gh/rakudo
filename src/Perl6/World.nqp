@@ -1537,22 +1537,22 @@ class Perl6::World is HLL::World {
         # into registers. Do need to take care of initial value though.
         my $prim := %cont_info<sigil> eq '$' && nqp::objprimspec($descriptor.of);
         if $prim {
-            if $scope eq 'state' { nqp::die("Natively typed state variables not yet implemented") }
-            if $prim == 1 {
-                $block[0].push(QAST::Op.new( :op('bind'),
-                    QAST::Var.new( :scope('lexical'), :name($name) ),
-                    QAST::IVal.new( :value(0) ) ))
-            }
-            elsif $prim == 2 {
-                $block[0].push(QAST::Op.new( :op('bind'),
-                    QAST::Var.new( :scope('lexical'), :name($name) ),
-                    QAST::Op.new( :op('nan') )));
-            }
-            elsif $prim == 3 {
-                $block[0].push(QAST::Op.new( :op('bind'),
-                    QAST::Var.new( :scope('lexical'), :name($name) ),
-                    QAST::SVal.new( :value('') ) ))
-            }
+            my &bind_init := -> $init_val {
+                my $varnode := QAST::Var.new( :scope('lexical'), :name($name) );
+                $block[0].push( QAST::Op.new( :op('if'),
+                    QAST::Op.new( :op('p6stateinit'),
+                        QAST::SVal.new( :value($name) ), QAST::IVal.new( :value(0))),
+                    QAST::Op.new( :op('bind'),
+                        QAST::Var.new( :scope('lexical'), :name($name) ),
+                        $init_val ),
+                    QAST::Var.new( :scope('lexicalref'), :name($name) ),
+                ));
+            };
+            if    $prim == 1 { &bind_init(QAST::IVal.new( :value(0) ))  }
+            elsif $prim == 2 { &bind_init(QAST::Op.new( :op('nan') ))   }
+            elsif $prim == 3 { &bind_init(QAST::SVal.new( :value('') )) }
+
+            $var.decl('statevar') if $scope eq 'state';
             return nqp::null();
         }
 
