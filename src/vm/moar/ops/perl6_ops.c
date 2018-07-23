@@ -235,18 +235,20 @@ static void p6captureouters(MVMThreadContext *tc, MVMuint8 *cur_op) {
 static MVMuint8 s_p6stateinit[] = {
     MVM_operand_int64 | MVM_operand_write_reg,
     MVM_operand_str   | MVM_operand_read_reg,
+    MVM_operand_int64 | MVM_operand_read_reg,
 };
 static MVMuint8 s_p6stateinitbulk[] = {
     MVM_operand_int64 | MVM_operand_write_reg,
     MVM_operand_obj   | MVM_operand_read_reg,
+    MVM_operand_int64 | MVM_operand_read_reg,
 };
-static void process_state_init(MVMThreadContext *tc, MVMint64 *rv, MVMString *sym) {
+static void process_state_init(MVMThreadContext *tc, MVMint64 *rv, MVMString *sym, MVMint64 update_flag) {
     /* Find num of lexical, so that we can mark it as HLL inited */
     MVMint64  idx         = MVM_frame_lexical_idx(tc, tc->cur_frame, sym);
     MVMuint8 *is_hll_init = ((MVMCode *)tc->cur_frame->code_ref)->body.state_vars_is_hll_init;
 
     *rv = !MVM_BITARR8_CHECK(is_hll_init, idx);
-    MVM_BITARR8_SET(is_hll_init, idx);
+    if (update_flag) MVM_BITARR8_SET(is_hll_init, idx);
 }
 static void p6stateinit(MVMThreadContext *tc, MVMuint8 *cur_op) {
     MVMStaticFrameBody *sfbody = &tc->cur_frame->static_info->body;
@@ -254,7 +256,7 @@ static void p6stateinit(MVMThreadContext *tc, MVMuint8 *cur_op) {
         GET_REG(tc, 0).i64 = 0;
     }
     else {
-        process_state_init( tc, &GET_REG(tc, 0).i64, GET_REG(tc, 2).s );
+        process_state_init( tc, &GET_REG(tc, 0).i64, GET_REG(tc, 2).s, GET_REG(tc, 4).i64);
     }
 }
 static void p6stateinitbulk(MVMThreadContext *tc, MVMuint8 *cur_op) {
@@ -276,7 +278,7 @@ static void p6stateinitbulk(MVMThreadContext *tc, MVMuint8 *cur_op) {
 
             REPR(arr)->pos_funcs.at_pos(tc, st, arr, objbody, i, &str, MVM_reg_str);
 
-            process_state_init( tc, &init_val, str.s );
+            process_state_init( tc, &init_val, str.s, GET_REG(tc, 4).i64 );
             res &= init_val;
             if ( !res ) break;
         }
@@ -553,8 +555,8 @@ MVM_DLL_EXPORT void Rakudo_ops_init(MVMThreadContext *tc) {
     MVM_ext_register_extop(tc, "p6capturelexwhere",  p6capturelexwhere, 2, s_p6capturelexwhere, NULL, NULL, 0);
     MVM_ext_register_extop(tc, "p6getouterctx", p6getouterctx, 2, s_p6getouterctx, NULL, NULL, MVM_EXTOP_PURE | MVM_EXTOP_ALLOCATING);
     MVM_ext_register_extop(tc, "p6captureouters", p6captureouters, 2, s_p6captureouters, NULL, NULL, 0);
-    MVM_ext_register_extop(tc, "p6stateinit", p6stateinit, 2, s_p6stateinit, NULL, NULL, 0);
-    MVM_ext_register_extop(tc, "p6stateinitbulk", p6stateinitbulk, 2, s_p6stateinitbulk, NULL, NULL, 0);
+    MVM_ext_register_extop(tc, "p6stateinit", p6stateinit, 3, s_p6stateinit, NULL, NULL, 0);
+    MVM_ext_register_extop(tc, "p6stateinitbulk", p6stateinitbulk, 3, s_p6stateinitbulk, NULL, NULL, 0);
     MVM_ext_register_extop(tc, "p6setfirstflag", p6setfirstflag, 2, s_p6setfirstflag, NULL, NULL, 0);
     MVM_ext_register_extop(tc, "p6takefirstflag", p6takefirstflag, 1, s_p6takefirstflag, NULL, NULL, 0);
     MVM_ext_register_extop(tc, "p6setpre", p6setpre, 1, s_p6setpre, NULL, NULL, 0);

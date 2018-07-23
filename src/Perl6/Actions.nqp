@@ -2670,7 +2670,7 @@ class Perl6::Actions is HLL::Actions does STDActions {
           :op('decont'),
           QAST::Op.new(
             :op('if'),
-            QAST::Op.new( :op('p6stateinit'), QAST::SVal.new( :value($sym) )),
+            QAST::Op.new( :op('p6stateinit'), QAST::SVal.new( :value($sym) ), QAST::IVal.new( :value(1))),
             QAST::Op.new(
               :op('p6store'),
               WANTED(QAST::Var.new(:name($sym), :scope('lexical')),'once'),
@@ -3557,7 +3557,7 @@ class Perl6::Actions is HLL::Actions does STDActions {
 
                     $past := QAST::Op.new( :op('if'),
                         QAST::Op.new( :op('p6stateinit'),
-                            QAST::SVal.new( :value($orig_past.name) )),
+                            QAST::SVal.new( :value($orig_past.name) ), QAST::IVal.new( :value(1) )),
                         $past, $orig_past
                     );
                     $past.nosink(1);
@@ -3662,7 +3662,7 @@ class Perl6::Actions is HLL::Actions does STDActions {
                     }
 
                     $list := QAST::Op.new( :op('if'),
-                        QAST::Op.new( :op('p6stateinitbulk'), $syms), $list, $orig_list
+                        QAST::Op.new( :op('p6stateinitbulk'), $syms, QAST::IVal.new( :value(1))), $list, $orig_list
                     );
                 }
             }
@@ -3937,7 +3937,7 @@ class Perl6::Actions is HLL::Actions does STDActions {
                 elsif %cont_info<build_ast> {
                     if $*SCOPE eq 'state' {
                         $past := QAST::Op.new( :op('if'),
-                            QAST::Op.new( :op('p6stateinit'), QAST::SVal.new( :value($past.name) )),
+                            QAST::Op.new( :op('p6stateinit'), QAST::SVal.new( :value($past.name) ), QAST::IVal.new( :value(1))),
                             QAST::Op.new( :op('bind'), $past, %cont_info<build_ast> ),
                             $past);
                     }

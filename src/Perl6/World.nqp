@@ -1535,18 +1535,21 @@ class Perl6::World is HLL::World {
 
         # If it's a native type, no container as we inline natives straight
         # into registers. Do need to take care of initial value though.
+        # If native is also a statevar wrap in p6stateinit so as not to init over and over
         my $prim := %cont_info<sigil> eq '$' && nqp::objprimspec($descriptor.of);
         if $prim {
             my &bind_init := -> $init_val {
-                my $varnode := QAST::Var.new( :scope('lexical'), :name($name) );
-                $block[0].push( QAST::Op.new( :op('if'),
-                    QAST::Op.new( :op('p6stateinit'),
-                        QAST::SVal.new( :value($name) ), QAST::IVal.new( :value(0))),
-                    QAST::Op.new( :op('bind'),
+                my $bindnode := QAST::Op.new( :op('bind'),
                         QAST::Var.new( :scope('lexical'), :name($name) ),
-                        $init_val ),
-                    QAST::Var.new( :scope('lexicalref'), :name($name) ),
-                ));
+                        $init_val );
+                if $scope eq 'state' {
+                    $bindnode :=  QAST::Op.new( :op('if'),
+                        QAST::Op.new( :op('p6stateinit'),
+                            QAST::SVal.new( :value($name) ), QAST::IVal.new( :value(0))),
+                        $bindnode,
+                        QAST::Var.new( :scope('lexical'), :name($name) ));
+                }
+                $block[0].push($bindnode);
             };
             if    $prim == 1 { &bind_init(QAST::IVal.new( :value(0) ))  }
             elsif $prim == 2 { &bind_init(QAST::Op.new( :op('nan') ))   }
