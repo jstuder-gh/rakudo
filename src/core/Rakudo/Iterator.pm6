@@ -2629,16 +2629,7 @@ class Rakudo::Iterator {
               )
             )
         }
-        proto method push-all(|) {*}
-        multi method push-all(IterationBuffer:D \target --> IterationEnd) {
-            nqp::stmts(
-              (my int $elems = nqp::elems($!reified)),
-              (my int $i = nqp::if(nqp::islt_i($!i, 0), 0, $!i)),
-              nqp::splice( target, nqp::slice($!reified, $i, -1), $elems, 0),
-              $!i = $elems,
-            )
-        }
-        multi method push-all($target --> IterationEnd) {
+        method push-all($target --> IterationEnd) {
             nqp::stmts(
               (my int $elems = nqp::elems($!reified)),
               (my int $i = $!i), # lexicals are faster than attributes
