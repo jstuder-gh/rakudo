@@ -2494,9 +2494,9 @@ class Rakudo::Iterator {
         }
         method new(\arr, Mu \des) { nqp::create(self)!SET-SELF(arr, des) }
 
-        method !hole(int $i, \target = $!reified) is raw {
+        method !hole(int $i) is raw {
             nqp::p6scalarfromdesc(ContainerDescriptor::BindArrayPos.new(
-                $!descriptor, target, $i))
+                $!descriptor, $!reified, $i))
         }
         method pull-one() is raw {
             nqp::ifnull(
@@ -2543,38 +2543,6 @@ class Rakudo::Iterator {
               ($!i = $i)
             )
         }
-
-        method ppush-all($target --> IterationEnd) {
-            say "In PPUSH-ALL";
-            nqp::stmts(
-            nqp::say("First STMT!!!"),
-              (my int $elems     = nqp::elems($!reified)),
-            nqp::say("Got elems: $elems"),
-              (my int $remaining = nqp::sub_i($elems, $!i)),
-            nqp::say("Got remaining: $remaining"),
-              (my \arr           = nqp::slice($!reified, $!i, -1)),
-
-              nqp::say("Got my slice: {arr}"),
-              # Check for holes
-              (my int $i = 0),
-              nqp::while(   # doesn't sink
-                nqp::islt_i($i, $remaining),
-                nqp::if(
-                  nqp::isnull(nqp::atpos(arr, $i)),
-                  nqp::bindpos(arr, $i, self!hole($i, arr))
-                ),
-                nqp::stmts($i = nqp::add_i($i, 1), nqp::say("\$i is $i. {arr}")),
-              ),
-
-              nqp::say("After hole check: {arr}"),
-              $target.append(arr),
-              nqp::say("After targ push {$target}"),
-              $!i = $elems,
-              nqp::say("After i assign {$target}"),
-              $remaining
-            )
-        }
-
         method skip-one() {
             nqp::islt_i(
               ($!i = nqp::add_i($!i,1)),
@@ -2661,26 +2629,17 @@ class Rakudo::Iterator {
               )
             )
         }
-        multi method push-all(IterationBuffer:D \target --> IterationEnd) {
+        method push-all($target --> IterationEnd) {
             nqp::stmts(
               (my int $elems = nqp::elems($!reified)),
-              nqp::splice(
-                target, nqp::slice($!reified, $!i, -1), nqp::sub_i($elems, 1), 0
-              )
-              $!i = $elems,
+              (my int $i = $!i), # lexicals are faster than attributes
+              nqp::while(  # doesn't sink
+                nqp::islt_i(($i = nqp::add_i($i,1)),$elems),
+                $target.push(nqp::atpos($!reified,$i))
+              ),
+              ($!i = $i)
             )
         }
-        multi method push-all($target --> IterationEnd) {
-            nqp::stmts(
-              (my int $elems = nqp::elems($!reified)),
-              (my int $remaining = nqp::sub_i($elems, $!i)),
-              (my \arr           = nqp::slice($!reified, $!i, -1)),
-
-              $target.append(arr),
-              ($!i = $elems)
-            )
-        }
-
         method skip-one() {
             nqp::islt_i(
               ($!i = nqp::add_i($!i,1)),

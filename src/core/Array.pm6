@@ -700,16 +700,6 @@ my class Array { # declared in BOOTSTRAP
           !! self!append-list(@values)
     }
 
-    multi method append(Array:D: IterationBuffer:D \value) {
-        nqp::if(
-          self.is-lazy,
-          X::Cannot::Lazy.new(action => 'append to').throw,
-          nqp::stmts(
-
-            self
-          )
-        )
-    }
     multi method append(Array:D: \value) {
         nqp::if(
           self.is-lazy,
