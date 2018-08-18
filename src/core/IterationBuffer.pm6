@@ -39,6 +39,16 @@ my class IterationBuffer {
         nqp::bindpos(self, $pos, value)
     }
 
+    method list(IterationBuffer:D:) {
+        nqp::p6bindattrinvres(nqp::create(List), List, '$!reified', self)
+    }
+    method List(IterationBuffer:D:) {
+        nqp::p6bindattrinvres(nqp::create(List), List, '$!reified', self)
+    }
+    method Slip(IterationBuffer:D:) {
+        nqp::p6bindattrinvres(nqp::create(Slip), List, '$!reified', self)
+    }
+
     # For core debugging purposes only: basically warp the IterationBuffer
     # into a full-fledged List and .perl that.  We don't care that it will
     # not round-trip.
