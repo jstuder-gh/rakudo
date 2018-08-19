@@ -1841,7 +1841,101 @@ class Rakudo::Iterator {
     # Return an iterator for an IterationBuffer.
     # Returns an nqp::null for elements that don't exist
     # before the end of the list.
-    my class IterationBufferIterator does Iterator { ... }
+    my class IterationBufferIterator does Iterator {
+        has IterationBuffer $!buf;
+        has int $!i;
+
+        method !SET-SELF(\list) {
+            nqp::stmts(
+              ($!buf := list),
+              ($!i = -1),
+              self
+            )
+        }
+        method new(\list) { nqp::create(self)!SET-SELF(list) }
+
+        method pull-one() is raw {
+            nqp::ifnull(
+              nqp::atpos($!buf,$!i = nqp::add_i($!i,1)),
+              nqp::if(
+                nqp::islt_i($!i,nqp::elems($!buf)), # found a hole
+                nqp::null,                              # it's a hole
+                IterationEnd                            # it's the end
+              )
+            )
+        }
+        method push-exactly($target, int $batch-size) {
+            nqp::stmts(
+              (my int $elems = nqp::elems($!buf)),
+              nqp::if(
+                nqp::isgt_i($elems, 0) && nqp::islt_i($!i, (my int $finalidx = nqp::sub_i($elems, 1))),
+                nqp::stmts(
+                  (my int $i = nqp::add_i($!i, 1)),
+                  (my int $remaining = nqp::sub_i($elems, $i)),
+                  (my int $todo = nqp::if( nqp::islt_i($remaining, $batch-size), $remaining, $batch-size)),
+                  (my int $endpos = nqp::sub_i(nqp::add_i($i, $todo), 1)),
+                  (my \arr = nqp::slice($!buf, $i, $endpos)),
+                  $target.append(arr),
+                  ($!i = $endpos),
+                  nqp::if(
+                    nqp::isge_i($endpos, $finalidx),
+                    IterationEnd,
+                    $todo
+                  )
+                ),
+                IterationEnd
+              )
+            )
+        }
+        method push-all($target --> IterationEnd) {
+            nqp::stmts(
+              (my int $elems = nqp::elems($!buf)),
+              nqp::if(
+                nqp::isgt_i($elems, 0) && nqp::islt_i($!i, (my int $finalidx = nqp::sub_i($elems, 1))),
+                nqp::stmts(
+                  (my int $i = nqp::add_i($!i, 1)),
+                  (my \arr = nqp::slice($!buf, $i, -1)),
+                  $target.append(arr),
+                  ($!i = $finalidx)
+                ),
+              )
+            )
+        }
+        method skip-one() {
+            nqp::islt_i(
+              ($!i = nqp::add_i($!i,1)),
+              nqp::elems($!buf)
+            )
+        }
+        method skip-at-least(Int:D $toskip) {
+            nqp::unless(
+              $toskip <= 0,  # must be HLL
+              nqp::stmts(
+                ($!i = nqp::if(
+                  $!i + $toskip < nqp::elems($!buf),  # must be HLL
+                  nqp::add_i($!i,$toskip),
+                  nqp::elems($!buf)
+                )),
+                nqp::islt_i($!i,nqp::elems($!buf))
+              )
+            )
+        }
+        method count-only() {
+            # we start off $!i at -1, so add back 1 to it to get right count
+            # if $i is >= elems, that means we're done iterating. We can't
+            # *just* substract in that case, as we'd get `-1`
+            nqp::p6box_i(
+              nqp::if(
+                nqp::islt_i($!i, nqp::elems($!buf)),
+                nqp::sub_i(nqp::elems($!buf),nqp::add_i($!i,1)),
+                0))
+        }
+        method bool-only()  {
+            nqp::p6bool(
+              nqp::islt_i($!i, nqp::sub_i(nqp::elems($!buf),1)))
+        }
+        method sink-all(--> IterationEnd) { $!i = nqp::elems($!buf) }
+    }
     method IterationBuffer(\list) {
         IterationBufferIterator.new(list)
     }

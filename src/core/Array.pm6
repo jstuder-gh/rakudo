@@ -705,7 +705,7 @@ my class Array { # declared in BOOTSTRAP
           self.is-lazy,
           X::Cannot::Lazy.new(action => 'append to').throw,
           nqp::if(
-            (nqp::iscont(value) || nqp::not_i(nqp::istype(value, Iterable))),
+            (nqp::iscont(value) || nqp::not_i(nqp::istype(value, Iterable) || nqp::istype(value, IterationBuffer))),
             nqp::stmts(
               nqp::push(
                 nqp::if(
@@ -770,7 +770,7 @@ my class Array { # declared in BOOTSTRAP
     }
     multi method prepend(Array:D: \value) {
         nqp::if(
-          (nqp::iscont(value) || nqp::not_i(nqp::istype(value, Iterable))),
+          (nqp::iscont(value) || nqp::not_i(nqp::istype(value, Iterable) || nqp::istype(value, IterationBuffer))),
           nqp::stmts(
             nqp::unshift(
               nqp::if(
