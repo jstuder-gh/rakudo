@@ -52,10 +52,6 @@ multi sub POSITIONS(
               nqp::push($!target,value)
             )
         }
-
-        method append(IterationBuffer:D \values) {
-            nqp::splice($!target, values, nqp::elems($!target), 0)
-        }
     }
 
     # we can optimize `42..*` Ranges; as long as they're from core, unmodified

@@ -2586,21 +2586,15 @@ class Rakudo::Iterator {
     # already.  Returns an nqp::null for elements that don't exist
     # before the end of the reified list.
     my class ReifiedListIterator does Iterator {
-        has IterationBuffer $!reified;
+        has $!reified;
         has int $!i;
 
         method !SET-SELF(\list) {
             nqp::stmts(
-              (my \reified = nqp::if(
+              ($!reified := nqp::if(
                 nqp::istype(list,List),
                 nqp::getattr(list,List,'$!reified'),
-                list,
-              )),
-              ($!reified := nqp::if(
-                nqp::istype(reified, IterationBuffer),
-                reified,
-                nqp::splice(nqp::create(IterationBuffer), reified, 0, 0),
-              )),
+                list)),
               ($!i = -1),
               self
             )
@@ -2638,20 +2632,12 @@ class Rakudo::Iterator {
         method push-all($target --> IterationEnd) {
             nqp::stmts(
               (my int $elems = nqp::elems($!reified)),
-              nqp::if(
-                nqp::isgt_i($elems, 0) && nqp::islt_i($!i, $elems),
-                nqp::stmts(
-                  (my int $i = nqp::if( nqp::islt_i($!i, 0), 0, $!i )),
-                  (my \arr = nqp::slice($!reified, $i, -1)),
-                  $target.append(
-                    nqp::if(
-                      nqp::istype($target, List) || nqp::istype($target, Array),
-                      arr.List,
-                      arr
-                  )),
-                  ($!i = $elems)
-                ),
+              (my int $i = $!i), # lexicals are faster than attributes
+              nqp::while(  # doesn't sink
+                nqp::islt_i(($i = nqp::add_i($i,1)),$elems),
+                $target.push(nqp::atpos($!reified,$i))
               ),
+              ($!i = $i)
             )
         }
         method skip-one() {
