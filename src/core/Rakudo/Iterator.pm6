@@ -1979,6 +1979,14 @@ class Rakudo::Iterator {
         }.new(iterator)
     }
 
+    # Return an iterator for an IterationBuffer.
+    # Returns an nqp::null for elements that don't exist
+    # before the end of the list.
+    my class IterationBufferIterator does Iterator { ... }
+    method IterationBuffer(\list) {
+        IterationBufferIterator.new(list)
+    }
+
     # Return an iterator that will alternately generate an index value,
     # and the value of the given iterator, basically the .kv functionality
     # for 1 dimensional lists.
