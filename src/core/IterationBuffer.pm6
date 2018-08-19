@@ -49,6 +49,10 @@ my class IterationBuffer {
         nqp::p6bindattrinvres(nqp::create(Slip), List, '$!reified', self)
     }
 
+    method iterator(IterationBuffer:D:) { Rakudo::Iterator.IterationBuffer(self) }
+
+    method is-lazy(IterationBuffer:D: --> False) { }
+
     # For core debugging purposes only: basically warp the IterationBuffer
     # into a full-fledged List and .perl that.  We don't care that it will
     # not round-trip.
