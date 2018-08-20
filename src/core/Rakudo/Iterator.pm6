@@ -2713,33 +2713,42 @@ class Rakudo::Iterator {
               )
             )
         }
+
         method push-exactly($target, int $batch-size) {
             nqp::stmts(
-              (my int $todo = nqp::add_i($batch-size,1)),
-              (my int $i    = $!i),      # lexicals are faster than attrs
               (my int $elems = nqp::elems($!reified)),
-              nqp::while(
-                ($todo = nqp::sub_i($todo,1))
-                  && nqp::islt_i(($i = nqp::add_i($i,1)),$elems),
-                $target.push(nqp::atpos($!reified,$i))
-              ),
-              ($!i = $i),                # make sure pull-one ends
               nqp::if(
-                nqp::isge_i($i,$elems),
-                IterationEnd,
-                $batch-size
+                nqp::isgt_i($elems, 0) && nqp::islt_i($!i, (my int $finalidx = nqp::sub_i($elems, 1))),
+                nqp::stmts(
+                  (my int $i = nqp::add_i($!i, 1)),
+                  (my int $remaining = nqp::sub_i($elems, $i)),
+                  (my int $todo = nqp::if( nqp::islt_i($remaining, $batch-size), $remaining, $batch-size)),
+                  (my int $endpos = nqp::sub_i(nqp::add_i($i, $todo), 1)),
+                  (my \arr = nqp::slice($!reified, $i, $endpos)),
+                  $target.append(arr),
+                  ($!i = $endpos),
+                  nqp::if(
+                    nqp::isge_i($endpos, $finalidx),
+                    IterationEnd,
+                    $todo
+                  )
+                ),
+                IterationEnd
               )
             )
         }
         method push-all($target --> IterationEnd) {
             nqp::stmts(
               (my int $elems = nqp::elems($!reified)),
-              (my int $i = $!i), # lexicals are faster than attributes
-              nqp::while(  # doesn't sink
-                nqp::islt_i(($i = nqp::add_i($i,1)),$elems),
-                $target.push(nqp::atpos($!reified,$i))
-              ),
-              ($!i = $i)
+              nqp::if(
+                nqp::isgt_i($elems, 0) && nqp::islt_i($!i, (my int $finalidx = nqp::sub_i($elems, 1))),
+                nqp::stmts(
+                  (my int $i = nqp::add_i($!i, 1)),
+                  (my \arr = nqp::slice($!reified, $i, -1)),
+                  $target.append(arr),
+                  ($!i = $finalidx)
+                ),
+              )
             )
         }
         method skip-one() {
