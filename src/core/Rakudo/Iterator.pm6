@@ -2688,15 +2688,19 @@ class Rakudo::Iterator {
     # already.  Returns an nqp::null for elements that don't exist
     # before the end of the reified list.
     my class ReifiedListIterator does Iterator {
-        has $!reified;
+        has IterationBuffer $!reified;
         has int $!i;
 
         method !SET-SELF(\list) {
             nqp::stmts(
-              ($!reified := nqp::if(
-                nqp::istype(list,List),
-                nqp::getattr(list,List,'$!reified'),
+              (my \reified := nqp::if(
+                nqp::istype(list, List) || nqp::istype(list, Array),
+                nqp::getattr(list, List,'$!reified'),
                 list)),
+              ($!reified = nqp::if(
+                nqp::istype(reified, IterationBuffer),
+                reified,
+                nqp::splice(nqp::create(IterationBuffer), reified, 0, 0))),
               ($!i = -1),
               self
             )
