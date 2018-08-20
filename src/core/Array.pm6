@@ -32,15 +32,22 @@ my class Array { # declared in BOOTSTRAP
             nqp::push($!target, nqp::p6scalarwithvalue($!descriptor, value));
         }
 
-        method append(IterationBuffer:D $buffer --> Nil) {
-            nqp::if(
-              (my int $elems = nqp::elems($buffer)),
-              nqp::stmts(
-                (my int $i = -1),
-                nqp::while(
-                  nqp::islt_i(($i = nqp::add_i($i,1)),$elems),
-                  nqp::push($!target,
-                    nqp::p6scalarwithvalue($!descriptor,nqp::atpos($buffer,$i))
+        method append(\buffer --> Nil) {
+            nqp::stmts(
+              (my \itbuf = nqp::if(
+                nqp::istype(buffer, List) || nqp::istype(buffer, Array),
+                nqp::getattr(buffer, List, '$!reified'),
+                buffer,
+              )),
+              nqp::if(
+                (my int $elems = nqp::elems(itbuf)),
+                nqp::stmts(
+                  (my int $i = -1),
+                  nqp::while(
+                    nqp::islt_i(($i = nqp::add_i($i,1)),$elems),
+                    nqp::push($!target,
+                      nqp::p6scalarwithvalue($!descriptor,nqp::atpos(itbuf,$i))
+                    )
                   )
                 )
               )
@@ -60,8 +67,15 @@ my class Array { # declared in BOOTSTRAP
                 nqp::decont(value));
         }
 
-        method append(IterationBuffer:D \buffer --> Nil) {
-            nqp::splice($!target,buffer,nqp::elems($!target),0)
+        method append(\buffer --> Nil) {
+            nqp::stmts(
+              (my \itbuf = nqp::if(
+                nqp::istype(buffer, List) || nqp::istype(buffer, Array),
+                nqp::getattr(buffer, List, '$!reified'),
+                buffer,
+              )),
+              nqp::splice($!target, itbuf, nqp::elems($!target), 0)
+            )
         }
     }
 
