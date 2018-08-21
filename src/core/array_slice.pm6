@@ -52,6 +52,22 @@ multi sub POSITIONS(
               nqp::push($!target,value)
             )
         }
+
+        method append(\buffer) {
+            nqp::stmts(
+              (my int $i = -1),
+              (my \itbuf = nqp::if(
+                nqp::istype(buffer, List),
+                nqp::getattr(buffer, List, '$reified'),
+                buffer,
+              )),
+              (my int $elems = nqp::elems(itbuf)),
+              nqp::while(
+                nqp::islt_i(($i = nqp::add_i($i, 1)), $elems),
+                self.push(nqp::atpos(itbuf, $i)),
+              ),
+            )
+        }
     }
 
     # we can optimize `42..*` Ranges; as long as they're from core, unmodified
