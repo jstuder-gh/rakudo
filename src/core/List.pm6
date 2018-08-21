@@ -1391,12 +1391,9 @@ my class List does Iterable does Positional { # declared in BOOTSTRAP
           Seq.new(
             nqp::if(
               nqp::isconcrete($!reified),
-              Rakudo::Iterator.ReifiedList(
+              Rakudo::Iterator.IterationBuffer(
                 Rakudo::Sorting.MERGESORT-REIFIED-LIST(
-                  nqp::p6bindattrinvres(
-                    nqp::create(List),List,'$!reified',
-                    nqp::clone(nqp::getattr(self,List,'$!reified'))
-                  )
+                  nqp::clone(nqp::getattr(self,List,'$!reified'))
                 )
               ),
               Rakudo::Iterator.Empty

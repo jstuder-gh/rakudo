@@ -1451,14 +1451,12 @@ Did you mean to add a stub (\{...\}) or did you mean to .classify?"
     multi method sort() {
         nqp::if(
           nqp::eqaddr(
-            self.iterator.push-until-lazy(my $list := IterationBuffer.new),
+            self.iterator.push-until-lazy(my \list = nqp::create(IterationBuffer)),
             IterationEnd
           ),
           Seq.new(
-            Rakudo::Iterator.ReifiedList(
-              Rakudo::Sorting.MERGESORT-REIFIED-LIST(
-                nqp::p6bindattrinvres(nqp::create(List),List,'$!reified',$list)
-              )
+            Rakudo::Iterator.IterationBuffer(
+              Rakudo::Sorting.MERGESORT-REIFIED-LIST(list)
             )
           ),
           X::Cannot::Lazy.new(:action<sort>).throw
