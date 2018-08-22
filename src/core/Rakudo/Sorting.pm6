@@ -19,7 +19,11 @@ my class Rakudo::Sorting {
             (my $A := nqp::if(
               nqp::istype(list, List),
               nqp::getattr(list, List, '$!reified'),
-              list,
+              nqp::if(
+                nqp::istype(list, IterationBuffer),
+                list,
+                nqp::splice(nqp::create(IterationBuffer), list, 0, 0),
+              ),
             ))
           )),2),
           nqp::stmts(     # we actually need to sort

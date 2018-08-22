@@ -1988,8 +1988,12 @@ class Rakudo::Iterator {
 
         method !SET-SELF(\list) {
             nqp::stmts(
-              ($!buf := list),
               ($!i = -1),
+              ($!buf := nqp::if(
+                nqp::istype(list, IterationBuffer),
+                list,
+                nqp::splice(nqp::create(IterationBuffer), list, 0, 0),
+              )),
               self
             )
         }
