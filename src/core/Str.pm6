@@ -1899,7 +1899,7 @@ my class Str does Stringy { # declared in BOOTSTRAP
         nqp::push($result,nqp::substr($str,$pos))
           unless $skip && nqp::iseq_i($pos,nqp::chars($str));
 
-        Seq.new(Rakudo::Iterator.ReifiedList($result))
+        Seq.new(Rakudo::Iterator.IterationBuffer($result))
     }
 
     # Note that in these same* methods, as used by s/LHS/RHS/, the
