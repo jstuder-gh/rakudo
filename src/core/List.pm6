@@ -1538,7 +1538,9 @@ my class List does Iterable does Positional { # declared in BOOTSTRAP
 
 # The , operator produces a List.
 proto sub infix:<,>(|) is pure {*}
-multi sub infix:<,>() { nqp::create(List) }
+multi sub infix:<,>() {
+    nqp::p6bindattrinvres(nqp::create(List), List, '$!reified', nqp::create(IterationBuffer))
+}
 multi sub infix:<,>(Slip:D \a, Slip:D \b) {
     # now set up the List with a future
     Rakudo::Internals.INFIX_COMMA_SLIP_HELPER(nqp::create(IterationBuffer), nqp::list(a,b))
@@ -1556,7 +1558,10 @@ multi sub infix:<,>(Slip:D \a, Any \b) {
     Rakudo::Internals.INFIX_COMMA_SLIP_HELPER(nqp::create(IterationBuffer), nqp::list(a,b))
 }
 multi sub infix:<,>(Any \a, Any \b) {
-    nqp::p6bindattrinvres(nqp::create(List),List,'$!reified',nqp::list(a,b))
+    nqp::p6bindattrinvres(
+        nqp::create(List), List, '$!reified',
+        nqp::splice(nqp::create(IterationBuffer), nqp::list(a,b), 0, 0)
+    )
 }
 multi sub infix:<,>(|) {
 
@@ -1572,7 +1577,7 @@ multi sub infix:<,>(|) {
 
     nqp::if(
       nqp::iseq_i($i,$elems),  # no Slip seen, so just alias input params
-      nqp::p6bindattrinvres(nqp::create(List),List,'$!reified',in),
+      nqp::p6bindattrinvres(nqp::create(List),List,'$!reified', nqp::splice(nqp::create(IterationBuffer), in, 0, 0)),
       nqp::stmts(  # Slip seen, first copy non-slippy things
         ($elems = $i),
         ($i     = -1),
