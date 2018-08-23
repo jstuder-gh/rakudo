@@ -127,11 +127,9 @@ my class Map does Iterable does Associative { # declared in BOOTSTRAP
 
     multi method sort(Map:D:) {
         Seq.new(
-          Rakudo::Iterator.ReifiedList(
+          Rakudo::Iterator.IterationBuffer(
             Rakudo::Sorting.MERGESORT-REIFIED-LIST-AS(
-              nqp::p6bindattrinvres(
-                nqp::create(List),List,'$!reified',self.IterationBuffer
-              ),
+              self.IterationBuffer,
               { nqp::getattr(nqp::decont($^a),Pair,'$!key') }
             )
           )

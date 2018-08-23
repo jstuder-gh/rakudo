@@ -203,7 +203,15 @@ my class Rakudo::Sorting {
     method MERGESORT-REIFIED-LIST-AS(\list,&mapper) {
         nqp::if(
           nqp::isgt_i((my int $n = nqp::elems(
-            my $O := nqp::getattr(list,List,'$!reified')    # Original
+            (my $O := nqp::if(
+              nqp::istype(list, List),
+              nqp::getattr(list, List, '$!reified'),   # Original
+              nqp::if(
+                nqp::istype(list, IterationBuffer),
+                list,
+                nqp::splice(nqp::create(IterationBuffer), list, 0, 0),
+              ),
+            )),
           )),2),
           nqp::stmts(     # we actually need to sort
             (my $S :=                                       # the Schwartz
@@ -286,18 +294,25 @@ my class Rakudo::Sorting {
               nqp::islt_i(($s = nqp::add_i($s,1)),$n),
               nqp::bindpos($S,$s,nqp::atpos($O,nqp::atpos_i($A,$s)))
             ),
-            nqp::p6bindattrinvres(list,List,'$!reified',$S)
-          ),
-
-          nqp::p6bindattrinvres(nqp::create(List),List,'$!reified',
             nqp::if(
-              nqp::islt_i($n,2)
-                || nqp::iseq_i(
-                    mapper(nqp::atpos($O,0)) cmp mapper(nqp::atpos($O,1)),-1),
-              $O,  # nothing to be done, we already have the result
-              IB2(nqp::atpos($O,1),nqp::atpos($O,0))  # need to swap
-            )
-          )
+              nqp::istype(list, List),
+              nqp::p6bindattrinvres(list, List, '$!reified', $S),
+              $S,
+            ),
+          ),
+          nqp::if(
+            nqp::islt_i($n,2) || nqp::iseq_i(
+                  mapper(nqp::atpos($O,0)) cmp mapper(nqp::atpos($O,1)),-1),
+            list, # nothing to be done, we already have the result
+            nqp::stmts( # need to swap
+              (my \res = IB2(nqp::atpos($O,1),nqp::atpos($O,0))),
+              nqp::if(
+                nqp::istype(list, List),
+                nqp::p6bindattrinvres(list, List, '$!reified', res),
+                res,
+              ),
+            ),
+          ),
         )
     }
 
