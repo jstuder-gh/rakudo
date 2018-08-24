@@ -118,7 +118,15 @@ my class Rakudo::Sorting {
         nqp::if(
           nqp::isgt_i((my int $n = nqp::elems(
             # $A has the items to sort; $B is a work array
-            my $A := nqp::getattr(list,List,'$!reified')
+            (my $A := nqp::if(
+              nqp::istype(list, List),
+              nqp::getattr(list, List, '$!reified'),
+              nqp::if(
+                nqp::istype(list, IterationBuffer),
+                list,
+                nqp::splice(nqp::create(IterationBuffer), list, 0, 0),
+              ),
+            ))
           )),2),
           nqp::stmts(     # we actually need to sort
             (my $B := nqp::setelems(nqp::create(IterationBuffer),$n)),
@@ -187,16 +195,25 @@ my class Rakudo::Sorting {
                 ($width = nqp::add_i($width,$width))
               )
             ),
-            nqp::p6bindattrinvres(list,List,'$!reified',$A)
+            nqp::if(
+              nqp::istype(list, List),
+              nqp::p6bindattrinvres(list, List, '$!reified', $A),
+              $A,
+            ),
           ),
           nqp::if(
-            nqp::islt_i($n,2)
-              || nqp::islt_i(
+            nqp::islt_i($n,2) || nqp::islt_i(
                   comparator(nqp::atpos($A,0),nqp::atpos($A,1)),1),
-            list,  # nothing to be done, we already have the result
-            nqp::p6bindattrinvres(list,List,'$!reified',  # need to swap
-              IB2(nqp::atpos($A,1),nqp::atpos($A,0)))
-          )
+            list, # nothing to be done, we already have the result
+            nqp::stmts( # need to swap
+              (my \res = IB2(nqp::atpos($A,1),nqp::atpos($A,0))),
+              nqp::if(
+                nqp::istype(list, List),
+                nqp::p6bindattrinvres(list, List, '$!reified', res),
+                res,
+              ),
+            ),
+          ),
         )
     }
     # Takes the HLL List to be sorted *in place* using the mapper

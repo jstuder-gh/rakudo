@@ -1424,23 +1424,20 @@ my class List does Iterable does Positional { # declared in BOOTSTRAP
           Seq.new(
             nqp::if(
               nqp::isconcrete($!reified),
-              Rakudo::Iterator.ReifiedList(
+              Rakudo::Iterator.IterationBuffer(
                 nqp::if(
                   nqp::eqaddr(&by,&infix:<cmp>),
                   Rakudo::Sorting.MERGESORT-REIFIED-LIST(
-                    nqp::p6bindattrinvres(nqp::create(List),List,'$!reified',
-                      nqp::clone(nqp::getattr(self,List,'$!reified')))
+                    nqp::getattr(self,List,'$!reified')
                   ),
                   nqp::if(
                     &by.count < 2,
                     Rakudo::Sorting.MERGESORT-REIFIED-LIST-AS(
-                      nqp::p6bindattrinvres(nqp::create(List),List,'$!reified',
-                        nqp::getattr(self,List,'$!reified')),
+                      nqp::getattr(self,List,'$!reified'),
                       &by
                     ),
                     Rakudo::Sorting.MERGESORT-REIFIED-LIST-WITH(
-                      nqp::p6bindattrinvres(nqp::create(List),List,'$!reified',
-                        nqp::clone(nqp::getattr(self,List,'$!reified'))),
+                      nqp::getattr(self,List,'$!reified'),
                       &by
                     )
                   )
