@@ -1478,7 +1478,7 @@ my class Str does Stringy { # declared in BOOTSTRAP
             nqp::bindpos($result,$i,nqp::substr($str,$pos));
         }
 
-        Seq.new(Rakudo::Iterator.ReifiedList($result))
+        Seq.new(Rakudo::Iterator.IterationBuffer($result))
     }
 
     multi method split(Str:D: Str(Cool) $match;;
@@ -1538,7 +1538,7 @@ my class Str does Stringy { # declared in BOOTSTRAP
             nqp::push($matches,"");
         }
 
-        Seq.new(Rakudo::Iterator.ReifiedList($matches))
+        Seq.new(Rakudo::Iterator.IterationBuffer(nqp::splice(nqp::create(IterationBuffer), $matches, 0, 0)))
     }
 
     my class SplitStrLimit does Iterator {

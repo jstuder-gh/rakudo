@@ -51,7 +51,7 @@ my class Mu { # declared in BOOTSTRAP
         # note: cannot use R:I.OneValue, as that doesn't (and shouldn't)
         # take Mu for the value to produce, as Mu is used to indicate
         # exhaustion.
-        Rakudo::Iterator.ReifiedList($buf)
+        Rakudo::Iterator.IterationBuffer($buf)
     }
 
     proto method split(|) {*}

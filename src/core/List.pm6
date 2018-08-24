@@ -1467,7 +1467,9 @@ my class List does Iterable does Positional { # declared in BOOTSTRAP
             nqp::if(
               nqp::isconcrete($!reified) && nqp::elems($!reified),
               nqp::stmts(
-                (my $iterator := Rakudo::Iterator.ReifiedList(self)),
+                (my $iterator := Rakudo::Iterator.IterationBuffer(
+                  nqp::splice(nqp::create(IterationBuffer), $!reified, 0, 0),
+                )),
                 nqp::if(
                   nqp::istype($n,Callable),
                   nqp::if(
@@ -1647,7 +1649,7 @@ multi sub infix:<xx>(&x, Int:D $n) {
         )
       )
     );
-    Seq.new(Rakudo::Iterator.ReifiedList($list))
+    Seq.new(Rakudo::Iterator.IterationBuffer($list))
 }
 multi sub infix:<xx>(Mu \x, Num:D() $n) {
     Seq.new(nqp::if(

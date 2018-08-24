@@ -100,8 +100,8 @@ my class Rakudo::Sorting {
           ),
           nqp::if(
             nqp::islt_i($n,2) || nqp::isle_i(nqp::atpos($A,0) cmp nqp::atpos($A,1),0),
-            list,
-            nqp::stmts(
+            list, # nothing to be done, we already have the result
+            nqp::stmts( # need to swap
               (my \res = IB2(nqp::atpos($A,1),nqp::atpos($A,0))),
               nqp::if(
                 nqp::istype(list, List),
