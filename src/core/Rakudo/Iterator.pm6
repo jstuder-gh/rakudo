@@ -1840,66 +1840,67 @@ class Rakudo::Iterator {
     # Return an iterator for the given low/high integer value (inclusive).
     # Has dedicated .push-all for those cases one needs to fill a list
     # with consecutive numbers quickly.
+    class IntRangeIterator does Iterator {
+        has int $!i;
+        has int $!last;
+        has $!is-lazy;
+
+        method !SET-SELF(int $i, $last) {
+            nqp::stmts(
+              ($!i    = nqp::sub_i($i,1)),
+              ($!last = nqp::if(
+                ($!is-lazy := $last == Inf),
+                int.Range.max,
+                $last
+              )),
+              self
+            )
+        }
+        method new(\f,\t) { nqp::create(self)!SET-SELF(f,t) }
+
+        method pull-one() {
+            nqp::if(
+              nqp::isle_i(($!i = nqp::add_i($!i,1)),$!last),
+              $!i,
+              IterationEnd
+            )
+        }
+        method push-exactly($target, int $batch-size) {
+            nqp::stmts(
+              (my int $todo = nqp::add_i($batch-size,1)),
+              (my int $i    = $!i),      # lexicals are faster than attrs
+              (my int $last = $!last),
+              nqp::while(
+                ($todo = nqp::sub_i($todo,1))
+                  && nqp::isle_i(($i = nqp::add_i($i,1)),$last),
+                $target.push(nqp::p6box_i($i))
+              ),
+              ($!i = $i),                # make sure pull-one ends
+              nqp::if(
+                nqp::isgt_i($i,$last),
+                IterationEnd,
+                $batch-size
+              )
+            )
+        }
+        method push-all($target --> IterationEnd) {
+            nqp::stmts(
+              (my int $i    = $!i),      # lexicals are faster than attrs
+              (my int $last = $!last),
+              nqp::while(
+                nqp::isle_i(($i = nqp::add_i($i,1)),$last),
+                $target.push(nqp::p6box_i($i))
+              ),
+              ($!i = $i),                # make sure pull-one ends
+            )
+       }
+       method is-lazy(--> Bool:D) { $!is-lazy }
+       method count-only() { nqp::p6box_i(nqp::sub_i($!last,$!i)) }
+       method bool-only()  { nqp::p6bool(nqp::isgt_i($!last,$!i)) }
+       method sink-all(--> IterationEnd) { $!i = $!last }
+    }
     method IntRange(\from,\to) {
-        class :: does Iterator {
-            has int $!i;
-            has int $!last;
-            has $!is-lazy;
-
-            method !SET-SELF(int $i, $last) {
-                nqp::stmts(
-                  ($!i    = nqp::sub_i($i,1)),
-                  ($!last = nqp::if(
-                    ($!is-lazy := $last == Inf),
-                    int.Range.max,
-                    $last
-                  )),
-                  self
-                )
-            }
-            method new(\f,\t) { nqp::create(self)!SET-SELF(f,t) }
-
-            method pull-one() {
-                nqp::if(
-                  nqp::isle_i(($!i = nqp::add_i($!i,1)),$!last),
-                  $!i,
-                  IterationEnd
-                )
-            }
-            method push-exactly($target, int $batch-size) {
-                nqp::stmts(
-                  (my int $todo = nqp::add_i($batch-size,1)),
-                  (my int $i    = $!i),      # lexicals are faster than attrs
-                  (my int $last = $!last),
-                  nqp::while(
-                    ($todo = nqp::sub_i($todo,1))
-                      && nqp::isle_i(($i = nqp::add_i($i,1)),$last),
-                    $target.push(nqp::p6box_i($i))
-                  ),
-                  ($!i = $i),                # make sure pull-one ends
-                  nqp::if(
-                    nqp::isgt_i($i,$last),
-                    IterationEnd,
-                    $batch-size
-                  )
-                )
-            }
-            method push-all($target --> IterationEnd) {
-                nqp::stmts(
-                  (my int $i    = $!i),      # lexicals are faster than attrs
-                  (my int $last = $!last),
-                  nqp::while(
-                    nqp::isle_i(($i = nqp::add_i($i,1)),$last),
-                    $target.push(nqp::p6box_i($i))
-                  ),
-                  ($!i = $i),                # make sure pull-one ends
-                )
-            }
-            method is-lazy(--> Bool:D) { $!is-lazy }
-            method count-only() { nqp::p6box_i(nqp::sub_i($!last,$!i)) }
-            method bool-only()  { nqp::p6bool(nqp::isgt_i($!last,$!i)) }
-            method sink-all(--> IterationEnd) { $!i = $!last }
-        }.new(from,to)
+        IntRangeIterator.new(from, to);
     }
 
     # Return an iterator from a given iterator producing Pairs, in which
