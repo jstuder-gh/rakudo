@@ -1907,77 +1907,78 @@ class Rakudo::Iterator {
     # each .value is checked for iterability: if Iterable, produce Pairs
     # with the original key as its value, and key with the values produced
     # by the Iterable.  Otherwise, just produce an antipair.
-    method Invert(\iterator) {
-        class :: does Iterator {
-            has $!iterator;   # source iterator
-            has $!value;      # original key to repeat for Iterable
-            has $!slipper;    # iterator if Iterable value in source
+    class InvertIterator does Iterator {
+        has $!iterator;   # source iterator
+        has $!value;      # original key to repeat for Iterable
+        has $!slipper;    # iterator if Iterable value in source
 
-            method new(\iterator) {
-                nqp::p6bindattrinvres(
-                  nqp::create(self),self,'$!iterator',iterator)
-            }
-            method pull-one() {
-                nqp::if(
-                  $!slipper,                            # we have a slipper
-                  nqp::if(
-                    nqp::eqaddr(
-                      (my $pulled := $!slipper.pull-one),
-                      IterationEnd
+        method new(\iterator) {
+            nqp::p6bindattrinvres(
+              nqp::create(self),self,'$!iterator',iterator)
+        }
+        method pull-one() {
+            nqp::if(
+              $!slipper,                            # we have a slipper
+              nqp::if(
+                nqp::eqaddr(
+                  (my $pulled := $!slipper.pull-one),
+                  IterationEnd
+                ),
+                nqp::stmts(                         # slipper exhausted
+                  ($!slipper := nqp::null),         # deny all knowledge
+                  self.pull-one                     # rinse and repeat
+                ),
+                Pair.new($pulled,$!value)           # not the end, slip it
+              ),
+              nqp::if(                              # no slipper
+                nqp::eqaddr(
+                  ($pulled := nqp::decont($!iterator.pull-one)),
+                  IterationEnd
+                ),
+                IterationEnd,                       # source exhausted
+                nqp::if(                            # still in business
+                  nqp::istype($pulled,Pair),
+                  nqp::if(                          # it's a Pair, whee!
+                    nqp::istype(
+                      (my $key := nqp::getattr($pulled,Pair,'$!value')),
+                      Iterable
                     ),
-                    nqp::stmts(                         # slipper exhausted
-                      ($!slipper := nqp::null),         # deny all knowledge
-                      self.pull-one                     # rinse and repeat
+                    nqp::stmts(                     # need to slip it!
+                      ($!slipper := $key.iterator), # set up the slipper
+                      ($!value := nqp::getattr($pulled,Pair,'$!key')),
+                      self.pull-one                 # rinse and repeat
                     ),
-                    Pair.new($pulled,$!value)           # not the end, slip it
-                  ),
-                  nqp::if(                              # no slipper
-                    nqp::eqaddr(
-                      ($pulled := nqp::decont($!iterator.pull-one)),
-                      IterationEnd
-                    ),
-                    IterationEnd,                       # source exhausted
-                    nqp::if(                            # still in business
-                      nqp::istype($pulled,Pair),
-                      nqp::if(                          # it's a Pair, whee!
-                        nqp::istype(
-                          (my $key := nqp::getattr($pulled,Pair,'$!value')),
-                          Iterable
-                        ),
-                        nqp::stmts(                     # need to slip it!
-                          ($!slipper := $key.iterator), # set up the slipper
-                          ($!value := nqp::getattr($pulled,Pair,'$!key')),
-                          self.pull-one                 # rinse and repeat
-                        ),
-                        Pair.new(                       # just needs swapping
-                          $key,
-                          nqp::getattr($pulled,Pair,'$!key')
-                        )
-                      ),
-                      X::TypeCheck.new(                 # naughty, slap it!
-                        operation => 'invert',
-                        got       => $pulled,
-                        expected  => Pair
-                      ).throw
+                    Pair.new(                       # just needs swapping
+                      $key,
+                      nqp::getattr($pulled,Pair,'$!key')
                     )
-                  )
+                  ),
+                  X::TypeCheck.new(                 # naughty, slap it!
+                    operation => 'invert',
+                    got       => $pulled,
+                    expected  => Pair
+                  ).throw
                 )
-            }
-            method is-lazy() { $!iterator.is-lazy }
-            method sink-all(--> IterationEnd) {
-                nqp::until(
-                  nqp::eqaddr((my $pulled := $!iterator.pull-one),IterationEnd),
-                  nqp::unless(
-                    nqp::istype($pulled,Pair),
-                    X::TypeCheck.new(                   # naughty, slap it!
-                      operation => 'invert',
-                      got       => $pulled,
-                      expected  => Pair
-                    ).throw
-                  )
-                )
-            }
-        }.new(iterator)
+              )
+            )
+        }
+        method is-lazy() { $!iterator.is-lazy }
+        method sink-all(--> IterationEnd) {
+            nqp::until(
+              nqp::eqaddr((my $pulled := $!iterator.pull-one),IterationEnd),
+              nqp::unless(
+                nqp::istype($pulled,Pair),
+                X::TypeCheck.new(                   # naughty, slap it!
+                  operation => 'invert',
+                  got       => $pulled,
+                  expected  => Pair
+                ).throw
+              )
+            )
+        }
+    }
+    method Invert(\iterator) {
+        InvertIterator.new(iterator);
     }
 
     # Return an iterator for an IterationBuffer.
