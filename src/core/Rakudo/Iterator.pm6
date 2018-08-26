@@ -1887,11 +1887,15 @@ class Rakudo::Iterator {
             nqp::stmts(
               (my int $i    = $!i),      # lexicals are faster than attrs
               (my int $last = $!last),
-              nqp::while(
-                nqp::isle_i(($i = nqp::add_i($i,1)),$last),
-                $target.push(nqp::p6box_i($i))
+              nqp::if(
+                nqp::isle_i($!i, $!last),
+                $target.append(
+                  nqp::splice(
+                    nqp::create(IterationBuffer),
+                    nqp::range_I($i, $last, 1, 0, 0), 0, 0)
+                ),
               ),
-              ($!i = $i),                # make sure pull-one ends
+              ($!i = $!last),
             )
        }
        method is-lazy(--> Bool:D) { $!is-lazy }
