@@ -71,6 +71,9 @@ my role Enumeration {
 # Methods that we also have if the base type of an enumeration is
 # Numeric.
 my role NumericEnumeration {
+    multi method ACCEPTS(::?CLASS:D: Stringy:D \v) {
+        nqp::hllbool(nqp::iseq_s(nqp::unbox_s(self.key.Stringy), nqp::unbox_s(v.Stringy)))
+    }
     multi method Str(::?CLASS:D:) {
         self.key
     }
@@ -81,6 +84,9 @@ my role StringyEnumeration {
     }
 }
 my role NumericStringyEnumeration {
+    multi method ACCEPTS(::?CLASS:D: Stringy:D \v) {
+        nqp::hllbool(nqp::iseq_s(nqp::unbox_s(self.key.Stringy), nqp::unbox_s(v.Stringy)))
+    }
     multi method Str(::?CLASS:D:) {
         self.key
     }
